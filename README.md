@@ -28,7 +28,7 @@ python -i RP.dcm -o output.csv
 The program takes a plan as input and outputs a csv file in which each line is extracted features for each beam in the plan  
 
 # Installation
-The program uses pydicom to read DICOM file. 
+I recommend Anaconda as Python package manager. It comes with numpy. The program needs pydicom package which can be installed by pip: pip install pydicom.
 
 Please cite our paper if you find it useful for your research.  
 @article{lam2019predicting,  
