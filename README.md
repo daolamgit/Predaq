@@ -23,7 +23,7 @@ Implementation of plan feature extraction in the paper "Predicting gamma passing
 - EM	Edge metric: ratio of MLC side‐length to aperture area
 
 # Usage:
-python -i RP.dcm -o output.csv
+python plan_complexity -i RP.dcm -o output.csv
 
 The program takes a plan as input and outputs a csv file in which each line is extracted features for each beam in the plan  
 
