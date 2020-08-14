@@ -2,7 +2,7 @@ import pydicom as dicom
 import os, glob
 import numpy as np
 import csv
-
+from visualize import Visualize
 from argparse import ArgumentParser
 
 class Plan(object):
@@ -125,7 +125,7 @@ class Plan(object):
         try mapping here
         :return:
         '''
-        res = range(  self.total_beams)
+        res = list(range(  self.total_beams))
 
         for m in range( self.total_beams):
             beam_number = self.BeamSequence[m].BeamNumber
@@ -135,10 +135,10 @@ class Plan(object):
                     res[m] = f
                     break
             else:
-                print "Error in matching beam and MU in plan ", self.File_path
+                print ("Error in matching beam and MU in plan ", self.File_path)
 
         if not res == range(  self.total_beams):
-            print "Beam and MU order swap! ", self.File_path, "\n"
+            print ("Beam and MU order swap! ", self.File_path, "\n")
 
         return res
 
@@ -190,7 +190,7 @@ class Plan(object):
 
             aperture_motion = np.any( self.apertures[m], axis = 1)
             x1_motion = np.mean( self.leftpositions[m], axis = 1)
-            x2_motion = np.mean(self.leftpositions[m], axis= 1)
+            x2_motion = np.mean(self.rightpositions[m], axis= 1)
             (no_regs, uppers, lowers) =self.find_upper_lower_indices(aperture_motion, x1_motion, x2_motion)
             UAA_regions     = np.zeros(shape=( no_regs))
 
@@ -279,7 +279,7 @@ class Plan(object):
 
         # check error in coordinate, x1 < x2
         if np.nonzero(x1 > x2)[0].size:
-            print "Some x1 > x2"
+            print ("Some x1 > x2")
 
         dist_horz = np.abs(x2 - x1)
         dist_horz[dist_horz <= self.min_leafgap] = 0 #enforce close gaps
@@ -415,7 +415,7 @@ class Plan(object):
 
         def find_aav( ):
             x1_ = x1[active_indices]
-            max_x1 = np.max( x1_)
+            max_x1 = np.min( x1_)
             x2_ = x2[active_indices]
             max_x2 = np.max( x2_)
 
@@ -488,7 +488,7 @@ class Plan(object):
         cross check vet and horz for equal cardinal
         :return:
         '''
-        center = [0, np.cumsum( self.leaf_mat)[self.total_pair/2 -1]] # or -1
+        center = [0, np.cumsum( self.leaf_mat)[self.total_pair//2 -1]] # or -1
 
         #find x
         #open leaves
@@ -545,7 +545,7 @@ class Plan(object):
                 + np.sum(self.leafwidth2 * dist_horz[self.leafmid_idx]) \
                 + np.sum(self.leafwidth1 * dist_horz[self.leafbottom_idx])
         if AA == 0.0:
-            print "AA == 0.0: ", self.File_path, self.Beam_ID[m], k
+            print ("AA == 0.0: ", self.File_path, self.Beam_ID[m], k)
 
         return AA
 
@@ -588,7 +588,7 @@ class Plan(object):
                         self.BeamSequence[m].ControlPointSequence[k].MLCLeafSet =  \
                         self.BeamSequence[m].ControlPointSequence[k].BeamLimitingDevicePositionSequence[2].LeafJawPositions
                     except:
-                        print "MLC read error: ", self.File_path
+                        print ("MLC read error: ", self.File_path)
                 else:
                     self.BeamSequence[m].ControlPointSequence[k].MLCLeafSet  = \
                         self.BeamSequence[m].ControlPointSequence[k].BeamLimitingDevicePositionSequence[0].LeafJawPositions
@@ -718,11 +718,10 @@ class Plan(object):
         Input: left position, right position and jaw
         :return:
         '''
-        pass
+
 
 if __name__ == '__main__':
-
-    #example
+ #example
     parser = ArgumentParser()
     parser.add_argument( '-i', '--input', help = 'path to RP file')
     parser.add_argument( '-o', '--output', help = ' csv file')
@@ -766,4 +765,3 @@ if __name__ == '__main__':
                     ]
 
             writer.writerow(beam)
-
