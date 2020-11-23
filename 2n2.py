@@ -25,35 +25,8 @@ from scipy.special import boxcox, inv_boxcox
 import random
 import copy
 
-
-
-class GenericData():
-    '''
-    This is the data that is passed into Modeling obj
-    '''
-    def __init__(self):
-        self.trainX = []
-        self.trainY = []
-        self.testX = []
-        self.testY = []
-        self.data_train = []
-        self.data_test = []
-
-    def save_data(self,train_file = 'train.csv', test_file = 'test.csv'):
-        self.data_train_org.to_csv( train_file, sep =',' , index = False)
-        self.data_test_org.to_csv( test_file, sep = ',' , index = False)
-
-
 class Modeling( object):
     def __init__(self, data):
-        # ease the access to data
-        # _o means original target data
-        # without o means: it is transformeb but keep the notation to fix with legacy code
-
-        # # test the data is good # # #
-        # data.trainX = np.vstack( (data.trainX, data.testX))
-        # data.trainY = np.vstack((data.trainY, data.testY))
-
         # np.random.seed(1)
 
         self.data           = data
@@ -90,14 +63,6 @@ class Modeling( object):
         if not os.path.isdir( self.SAVE_PATH):
             os.makedirs( self.SAVE_PATH)
 
-        # hyper-parameters obtained through cross validation
-        # KNN
-
-        # # # good learning curve or corss validation
-
-        # }
-
-        # Set 2
         self.dt_hyper   = {'max_features' : 1,
                            'max_depth' : 1
         }
@@ -136,8 +101,6 @@ class Modeling( object):
         self.names      = self.models.keys()
         self.regressors = self.models.values()
 
-
-
         self.cross_validation()
         self.learning_curve()
         self.stacking_test()
@@ -172,7 +135,6 @@ class Modeling( object):
             plt.savefig(self.SAVE_PATH + self.names[i] + '_ feature _ importance.png')
         # plt.pause(1000)
         return -1
-
 
     def log(self, a):
         with open( self.LOG_FILE, 'a') as file_handle:
@@ -285,10 +247,6 @@ class Modeling( object):
                 ax.set_ylabel('MAE')
                 ax.set_title( self.names[r])
             plt.savefig( os.path.join( self.SAVE_PATH, str(m) + "_learning_curve.png"))
-
-
-    def learning_curve_with_cv(self):
-        pass
 
     def stacking_test(self):
         trainY = self.trainY
@@ -740,17 +698,6 @@ class Data():
         #rescale testX
         self.rescale_test()
 
-
-
-        self.scan_lower()
-
-    def scan_lower(self):
-        '''
-        What this?
-        :return:
-        '''
-        pass
-
     def load_data(self):
         #currently train and set are in single file
         self.data_train = pd.read_csv( self.training_path,  header= None)
@@ -907,98 +854,6 @@ class Data():
         '''
         np.savetxt( train_file, np.hstack( (self.trainX, self.trainY) ), delimiter="," )
         np.savetxt(test_file, np.hstack( (self.testX, self.testY) ), delimiter="," )
-
-class NewData():
-    def __init__(self, data, ID):
-        self.ID = ID
-        self.data = data
-
-        #something should pass out
-        #trainX, trainY
-        self.swap()
-
-    def swap(self):
-        ##swap ID from train to test
-        #then data_train and data_test
-        indices = self.data.data_train['PatientID']==ID
-        plan    = self.data.data_train[indices]
-
-        self.testX = np.concatenate( (self.data.testX, self.data.trainX[indices]))
-        self.testY = np.concatenate((self.data.testY, self.data.trainY[indices]))
-        self.data_test = self.data.data_test.append(self.data.data_train[indices])
-
-        not_indices = np.logical_not( indices)
-        self.trainX = self.data.trainX[not_indices]
-        self.trainY = self.data.trainY[not_indices]
-        self.data_train = self.data.data_train[not_indices]
-
-class Shuffle_Data():
-    '''
-    This class shuffle the data in training set into another training set and testing set randomly
-    '''
-    def __init__(self, data):
-        '''
-        The idea is return to the index matrix where 1 is for testing and 0 is for training
-        :param data:
-        '''
-        self.data               = data
-        self.data_train_org     = data.data_train_org
-        # self.test_index     = np.zeros( (len( self.data)), dtype=bool)
-        # self.test_index     = self.random_choice()
-
-        #get some common setup
-        self.setup()
-
-        #implement a next iterator here to spit out
-        #self.use_random_choice()
-
-    def setup(self):
-        Tr_list = ['TR 4', 'TR 5', 'TR 6', 'TR 14', 'TR 15']
-        self.ID_dict = {}
-        for tr in Tr_list:
-            ID = self.data_train_org.where(self.data_train_org['TreatID'] == tr)
-            PatientID = self.data_train_org[self.data_train_org['TreatID'] == tr]['PatientID']
-            pt = PatientID.unique()
-            self.ID_dict[tr] = pt
-
-    def random_choice(self):
-        '''
-        The idea is to get the indice of 1/10 of total plans for each Tr
-        and join them up (OR)
-        there may be better way but for starter just do the working way
-        :return:
-        '''
-        ID_list = []
-        for key,value in self.ID_dict.iteritems():
-            nSample = int( len( value)/10)
-            # print (nSample)
-            ids = random.sample( value, nSample)
-            ID_list += ids
-        yield ID_list
-
-    def use_random_choice(self):
-        #for i in range(4):
-        while True:
-            test_ID =  (self.random_choice().next())
-            test_ID_index = self.data.data_train['PatientID'].isin( test_ID)
-            testX    = self.data.trainX[test_ID_index]
-            trainX   = self.data.trainX[~test_ID_index]
-            testY = self.data.trainY[test_ID_index]
-            trainY = self.data.trainY[~test_ID_index]
-
-            if np.amin( testY[:,0]) < .88:
-                break
-
-        new_data = GenericData()
-        new_data.trainX = trainX
-        new_data.testX = testX
-        new_data.trainY = trainY
-        new_data.testY = testY
-        new_data.data_train = self.data.data_train[ ~test_ID_index]
-        new_data.data_test = self.data.data_train[ test_ID_index]
-        new_data.data_train_org = self.data.data_train_org[ ~test_ID_index]
-        new_data.data_test_org = self.data.data_train_org[ test_ID_index]
-        return new_data
 
 if __name__ == '__main__':
 

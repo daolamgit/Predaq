@@ -2,7 +2,6 @@ import pydicom as dicom
 import os, glob
 import numpy as np
 import csv
-from visualize import Visualize
 from argparse import ArgumentParser
 
 class Plan(object):
@@ -255,7 +254,6 @@ class Plan(object):
             # address the problem of AA[m][k]==0
             self.AA_0[m] = np.sum( self.AA[m]==0.0)
 
-
     def compute_segment_more_features(self, m, k):
         '''
         Add more features compared to the old one:
@@ -376,7 +374,6 @@ class Plan(object):
                 res += self.MU_seg[m][k] * self.AP_h[m][k]/self.AA[m][k]
 
         return res/self.MU_beam[m]
-
 
     def compute_MCS(self, m):
         #input: LSV, AAV m
@@ -534,11 +531,6 @@ class Plan(object):
             return 0
         return np.sum(dist_less) / np.sum(dist_vert)
 
-    # def find_SAS(self, dist_horz, thre):
-    #     return 1
-
-
-
     def find_AA(self, dist_horz, m, k):
         ###AA computing
         AA = np.sum(self.leafwidth1 * dist_horz[self.leaftop_idx]) \
@@ -567,8 +559,6 @@ class Plan(object):
                             + sum(abs(np.diff(x2[uppers[i]: lowers[i] + 1])))
         AP_h = sum(perim_horz)
         return AP_h
-
-
 
     def read_beam(self):
         '''
@@ -711,7 +701,6 @@ class Plan(object):
         mlc_pos = np.cumsum( mlc_grain)
         self.mlc_pos = mlc_pos
 
-
     def visual_test(self):
         '''
         Plot the mlc leaves and jaw in
@@ -721,7 +710,6 @@ class Plan(object):
 
 
 if __name__ == '__main__':
- #example
     parser = ArgumentParser()
     parser.add_argument( '-i', '--input', help = 'path to RP file')
     parser.add_argument( '-o', '--output', help = ' csv file')
