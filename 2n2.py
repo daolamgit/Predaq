@@ -402,6 +402,9 @@ class Modeling( object):
         print ("mean_train err, mean_test err, followed by max: ", ( mean_train, mean_test, max_train, max_test))
         self.log( ( mean_train, mean_test, max_train, max_test))
 
+
+        self.regressors[0] = clf
+
     def xgb_cv(self, trainX, trainY):
 
         trainY_t          = self.target_transform( trainY)
@@ -437,6 +440,9 @@ class Modeling( object):
         (mean_train, mean_test, max_train, max_test) = self.compute_error(clf, trainX, trainY)
         print ("mean_train err, mean_test err, followed by max: ", ( mean_train, mean_test, max_train, max_test))
         self.log( ( mean_train, mean_test, max_train, max_test))
+
+
+        self.regressors[2] = clf
 
     def gp_cv(self, trainX, trainY):
         pass
@@ -476,6 +482,7 @@ class Modeling( object):
         print ("mean_train err, mean_test err, followed by max: ", ( mean_train, mean_test, max_train, max_test))
         self.log( ( mean_train, mean_test, max_train, max_test))
 
+        self.regressors[1] = clf
 
 
     def xgb_lc(self, trainX, trainY):
