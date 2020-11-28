@@ -375,13 +375,8 @@ class Modeling( object):
             'max_features' : [5, 7, 9, 11, 13, 15]
         }
 
-        param_grid = {
-                "max_features": param_grids["max_features"],
-                "max_depth": param_grids["max_depth"],
-        }
-
-        grid = GridSearchCV( RandomForestRegressor(n_estimators = param_grids["n_estimators"][1]),
-                             param_grid= param_grid,
+        grid = GridSearchCV( RandomForestRegressor(
+                             param_grid= param_grids,
                              n_jobs= self.N_JOBS, verbose=1, cv= self.CV_FOLD, scoring= self.scoring)
 
         grid.fit( trainX, trainY_t)
@@ -414,14 +409,8 @@ class Modeling( object):
             'learning_rate': [.1, .2, .25, .3, .5]
         }
 
-        param_grid = {
-                "learning_rate": param_grids["learning_rate"],
-                "max_depth": param_grids["max_depth"],
-        }
-
-        grid = GridSearchCV( XGBRegressor( n_estimators= param_grids['n_estimators'][1],
-                                           reg_alpha= .3, reg_lambda= 1.),
-                             param_grid= param_grid,
+        grid = GridSearchCV( XGBRegressor( 
+                             param_grid= param_grids,
                              n_jobs= self.N_JOBS, verbose=1, cv= self.CV_FOLD, scoring= self.scoring)
 
         grid.fit( trainX, trainY_t)
@@ -452,22 +441,15 @@ class Modeling( object):
         trainY_t          = self.target_transform( trainY)
         param_grids = {
             "n_estimators" : [10, 25, 50, 100, 200],
-            # "max_depth" : [1, 2, 4, 5, 6, 8, 10],
             'learning_rate': [.1, .2, .25, .3, .5]
         }
 
-        param_grid = {
-                "learning_rate": param_grids["learning_rate"],
-                "n_estimators": param_grids["n_estimators"],
-        }
-
         grid = GridSearchCV( AdaBoostRegressor( base_estimator=DecisionTreeRegressor(**self.dt_hyper)),
-                             param_grid= param_grid,
+                             param_grid= param_grids,
                              n_jobs= self.N_JOBS, verbose=1, cv= self.CV_FOLD, scoring= self.scoring)
 
         grid.fit( trainX, trainY_t)
-
-
+ 
         #plot the cv labels wise, not heat map
         plot_cv( tuned_parameters= param_grid, clf = grid,
                  clf_name= 'Ada' ,
