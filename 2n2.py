@@ -56,8 +56,8 @@ class Modeling( object):
         #some parameters for training
         self.NORMALIZE_GP   = False
         self.INCLUDE_OLD_FEATURES = False
-        self.STACK_FOLD     = 5
-        self.CV_FOLD        = 5
+        self.STACK_FOLD     = 10
+        self.CV_FOLD        = 10
         self.LOG_FILE       = 'log1.log'
         self.SAVE_PATH      = os.path.join('../Res/MCS Features Tuned Redelivery update new measurement/')
         if not os.path.isdir( self.SAVE_PATH):
@@ -107,34 +107,6 @@ class Modeling( object):
         self.feature_importance()
 
         print("Done!")
-
-    def feature_importance(self):
-        trainX = self.trainX
-        trainY = self.trainY
-
-        # names = ['RF' , 'XGB']
-        algs = [0,1,2]
-        for i in algs: #range( len(self.names)):
-            clf = self.regressors[i]
-            trainY_t = self.target_transform(trainY)
-            clf.fit( trainX, trainY_t)
-
-            plt.figure(i + 10)
-            ax1     = plt.subplot(1, 1, 1)
-            # print clf.f
-            ind     = np.argsort( clf.feature_importances_)
-            bars    = clf.feature_importances_[ind]
-            labs    = self.data.data_train.columns[2:-2]
-            labs    = labs[ind]
-            print ([str(lab) for lab in labs])
-            ax1.barh( range( len( bars)), bars)
-            print (clf.feature_importances_[ind])
-            plt.yticks( range( len( bars)), labs)
-            ax1.set_title( self.names[i])
-            # plt.suptitle( ' Feature Importance')
-            plt.savefig(self.SAVE_PATH + self.names[i] + '_ feature _ importance.png')
-        # plt.pause(1000)
-        return -1
 
     def log(self, a):
         with open( self.LOG_FILE, 'a') as file_handle:
@@ -190,7 +162,6 @@ class Modeling( object):
 
     def learning_curve(self):
         # names = ['SVR', 'RF', 'AdaBoost', 'XGB', ]
-
         L_names = len( self.names)
         # f       = [0.05,  .1, .5, .7, 1]
         f       = np.array(range(1,21)) *.05
@@ -219,19 +190,8 @@ class Modeling( object):
                 for alg_i in alg_indices:
                     print ("Regressor: ", self.names[alg_i])
                     clf             = self.regressors[alg_i]
-                    (clf, res_train[alg_i, p_i], res_test[alg_i, p_i], max_train, max_test) = self.learning_curve_individual(clf, trainX, trainY)
-
-                # #svr
-                # (rf, res_train[0, i], res_test[0, i], max_train, max_test) = self.svr_lc(trainX, trainY)
-                #
-                # #rf
-                # (xgb, res_train[1, i], res_test[1, i], max_train, max_test) = self.rf_lc( trainX, trainY)
-                #
-                # #ada
-                # (rf, res_train[2, i], res_test[2, i], max_train, max_test) = self.ada_lc(trainX, trainY)
-                #
-                # #xgb
-                # (xgb, res_train[3, i], res_test[3, i], max_train, max_test) = self.xgb_lc( trainX, trainY)
+                    (clf, res_train[alg_i, p_i], res_test[alg_i, p_i], max_train, max_test) = 
+                                    self.learning_curve_individual(clf, trainX, trainY)
 
                 #save  train test
                 np.savetxt( os.path.join( self.SAVE_PATH, str(m) + "_learning_curve_train.txt"), res_train)
@@ -247,6 +207,34 @@ class Modeling( object):
                 ax.set_ylabel('MAE')
                 ax.set_title( self.names[r])
             plt.savefig( os.path.join( self.SAVE_PATH, str(m) + "_learning_curve.png"))
+
+    def feature_importance(self):
+        trainX = self.trainX
+        trainY = self.trainY
+
+        # names = ['RF' , 'XGB']
+        algs = [0,1,2]
+        for i in algs: #range( len(self.names)):
+            clf = self.regressors[i]
+            trainY_t = self.target_transform(trainY)
+            clf.fit( trainX, trainY_t)
+
+            plt.figure(i + 10)
+            ax1     = plt.subplot(1, 1, 1)
+            # print clf.f
+            ind     = np.argsort( clf.feature_importances_)
+            bars    = clf.feature_importances_[ind]
+            labs    = self.data.data_train.columns[2:-2]
+            labs    = labs[ind]
+            print ([str(lab) for lab in labs])
+            ax1.barh( range( len( bars)), bars)
+            print (clf.feature_importances_[ind])
+            plt.yticks( range( len( bars)), labs)
+            ax1.set_title( self.names[i])
+            # plt.suptitle( ' Feature Importance')
+            plt.savefig(self.SAVE_PATH + self.names[i] + '_ feature _ importance.png')
+        # plt.pause(1000)
+        return -1
 
     def stacking_test(self):
         trainY = self.trainY
@@ -337,29 +325,6 @@ class Modeling( object):
 
 # # # 2nd hierachical functions # # #
 
-    def svm_cv(self, trainX, trainY):
-        trainY_t = self.target_transform(trainY)
-        param_grid = {
-            "C" : [1e-3, .01, 1e-1, 1, 4, 16, 64],
-            # "C": [1, 4, 16, 64],
-            "epsilon" : [1e-2, 1e-3, 1e-4],
-            # "gamma" : [1e-2, 1e-1, 1, 1e1, 1e2]
-
-        }
-
-        grid = GridSearchCV( SVR(), param_grid= param_grid,
-                            n_jobs = self.N_JOBS, verbose = 1, cv = self.CV_FOLD, scoring = self.scoring)
-        grid.fit( trainX, trainY_t)
-
-        print("SVR: The best params are %s with score %f\n" % (grid.best_params_, grid.best_score_))
-
-        clf = SVR( **grid.best_params_)
-        clf.fit(  trainX, trainY_t)
-
-        (mean_train, mean_test, max_train, max_test) = self.compute_error(clf, trainX, trainY)
-        print ("mean_train err, mean_test err, followed by max: ", ( mean_train, mean_test, max_train, max_test))
-        self.log( ( mean_train, mean_test, max_train, max_test))
-
     def rf_cv(self, trainX, trainY):
         '''
         self.rf_hyper   = {'max_features' : 29,
@@ -433,9 +398,6 @@ class Modeling( object):
 
         self.regressors[2] = clf
 
-    def gp_cv(self, trainX, trainY):
-        pass
-
     def ada_cv(self, trainX, trainY):
 
         trainY_t          = self.target_transform( trainY)
@@ -466,32 +428,6 @@ class Modeling( object):
 
         self.regressors[1] = clf
 
-
-    def xgb_lc(self, trainX, trainY):
-
-        trainY_t          = self.target_transform( trainY)
-
-        clf = XGBRegressor( **self.xgb_hyper)
-        clf.fit(  trainX, trainY_t)
-
-        (mean_train, mean_test, max_train, max_test) = self.compute_error(clf, trainX, trainY)
-        print ("mean_train err, mean_test err, followed by max: ", ( mean_train, mean_test, max_train, max_test))
-        self.log( ( mean_train, mean_test, max_train, max_test))
-
-        return (clf, mean_train, mean_test, max_train, max_test)
-
-    def rf_lc(self, trainX, trainY):
-        trainY_t          = self.target_transform( trainY)
-
-        clf = RandomForestRegressor( **self.rf_hyper)
-        clf.fit(  trainX, trainY_t)
-
-        (mean_train, mean_test, max_train, max_test) = self.compute_error(clf, trainX, trainY)
-        print ("mean_train err, mean_test err, followed by max: ", ( mean_train, mean_test, max_train, max_test))
-        self.log( ( mean_train, mean_test, max_train, max_test))
-
-        return (clf, mean_train, mean_test, max_train, max_test)
-
     def learning_curve_individual(self, clf, trainX, trainY):
         trainY_t = self.target_transform(trainY)
         clf.fit( trainX, trainY_t)
@@ -501,130 +437,6 @@ class Modeling( object):
         self.log( ( mean_train, mean_test, max_train, max_test))
 
         return (clf, mean_train, mean_test, max_train, max_test)
-
-    def xgb(self, trainX, trainY):
-        trainY = self.trainY
-        testY = self.testY
-        trainX = self.trainX
-        testX = self.testX
-
-        clf = self.base_models['XGBoost']
-        clf.fit( trainX,  trainY)
-
-        pred_trainY = clf.predict(trainX)
-        pred_testY  = clf.predict(testX)
-
-        #print largest error
-        #print the largest error beam
-        err_train = pred_trainY - trainY
-        ind_sort =  np.argsort( -abs(err_train)) #descending
-        print ("train error")
-        print (self.data.data_train.iloc[ind_sort[0:10], 0:2])
-        print (err_train[ind_sort[0:10]])
-        print (np.mean(np.abs(err_train)))
-
-
-
-        #for test
-        #print the largest error beam
-        err_test = pred_testY - testY
-        ind_sort =  np.argsort( -abs(err_test)) #descending
-        print ("Test error")
-        print (self.data.data_test.iloc[ind_sort[0:10], 0:2])
-        print (err_test[ind_sort[0:10]])
-        print(np.mean(np.abs(err_test)))
-
-        return abs(err_test[ind_sort[0]])
-        # return error_max
-
-    def rf(self, trainX, trainY):
-        trainY = self.trainY
-        testY = self.testY
-        trainX = self.trainX
-        testX = self.testX
-
-        clf = self.base_models['RF']
-        clf.fit( trainX,  trainY)
-
-        pred_trainY = clf.predict(trainX)
-        pred_testY  = clf.predict(testX)
-
-        #print largest error
-        #print the largest error beam
-        err_train = pred_trainY - trainY
-        ind_sort =  np.argsort( -abs(err_train)) #descending
-        print ("train error")
-        print (self.data.data_train.iloc[ind_sort[0:10], 0:2])
-        print (err_train[ind_sort[0:10]])
-        print (np.mean(np.abs(err_train)))
-
-
-        #for test
-        #print the largest error beam
-        err_test = pred_testY - testY
-        ind_sort =  np.argsort( -abs(err_test)) #descending
-        print ("Test error")
-        print (self.data.data_test.iloc[ind_sort[0:10], 0:2])
-        print (err_test[ind_sort[0:10]])
-        print(np.mean(np.abs(err_test)))
-
-        # return abs(err_test[ind_sort[0]])
-        return np.mean( np.abs( err_test))
-        # return error_max
-
-    def gp_search(self, trainX, trainY):
-        trainY = self.trainY
-        testY = self.testY
-        trainX = self.trainX
-        testX = self.testX
-
-        # nus = np.array([.1, .25, .5, .75, 1, 100]) * 1e-2
-        nus = np.array([.6, .7 ,.8]) * 1e-2
-        for nu in nus:
-            print ("Nu: ", nu)
-            kernel_s   = 2. * Matern(length_scale=1., length_scale_bounds=(1e-5, 1e5),
-                                            nu= nu)
-            clf      = xam.ensemble.StackingRegressor(
-                                models = self.base_models,
-                                meta_model = GaussianProcessRegressor( kernel= kernel_s,
-                                                                       alpha= 1e-10,
-                                                                       optimizer= 'fmin_l_bfgs_b',
-                                                                       n_restarts_optimizer= 2,
-                                                                       normalize_y= self.NORMALIZE_GP,
-                                                                       copy_X_train= True,
-                                                                       random_state=2019),
-                                cv = KFold( n_splits= self.STACK_FOLD),
-                                use_base_features = self.INCLUDE_OLD_FEATURES
-                                )
-
-            clf.fit( trainX,  trainY)
-
-            pred_trainY = clf.predict(trainX)
-            pred_testY  = clf.predict(testX)
-
-            #print largest error
-            #print the largest error beam
-            err_train = pred_trainY - trainY
-            ind_sort =  np.argsort( -abs(err_train)) #descending
-            print ("train error")
-            print (self.data.data_train.iloc[ind_sort[0:10], 0:2])
-            print (err_train[ind_sort[0:10]])
-            print (np.mean(np.abs(err_train)))
-            print("Mean: ", np.mean(abs(err_train)))
-
-            #for test
-            #print the largest error beam
-            err_test = pred_testY - testY
-            ind_sort =  np.argsort( -abs(err_test)) #descending
-            print ("Test error")
-            print (self.data.data_test.iloc[ind_sort[0:10], 0:2])
-            print (err_test[ind_sort[0:10]])
-            print(np.mean(np.abs(err_test)))
-            print ("Mean: ", np.mean( abs( err_test)))
-
-            #return abs(err_test[ind_sort[0]])
-            # return error_max
-
 
 # # # helper functions # # #
 
@@ -647,8 +459,6 @@ class Modeling( object):
         max_test    = np.amax(abs(testY - pred_testY))
 
         return ( mean_train, mean_test, max_train, max_test)
-
-
 
 
 class Data():
