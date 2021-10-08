@@ -1,2 +1,4 @@
 python==2.7
 pydicom==1.0
+sklearn
+xgboost
